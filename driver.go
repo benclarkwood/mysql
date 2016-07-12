@@ -74,6 +74,17 @@ func mysqlColumnsToSQL(t *domain.Table) string {
 	return strings.Join(c, ", ")
 }
 
+func (m *MySQL) VendorSpecificCasting(row map[string]interface{}) {
+	// The MySQL driver returns text and date columns as []byte instead of string.
+	// Other types are correctly cased.
+	for k, v := range row {
+		bytes, isBytes := v.([]byte)
+		if isBytes {
+			row[k] = string(bytes)
+		}
+	}
+}
+
 func (m *MySQL) Describe() (*domain.Description, error) {
 	describeQuery := `
         SELECT table_schema, table_name, column_name, CASE column_key WHEN 'PRI' THEN true ELSE false END as is_primary_key
